@@ -1,0 +1,95 @@
+generator client {
+    provider = "prisma-client-js"
+    output   = "./generated/dev-client"
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = "file:./dev.db"
+}
+
+model User {
+    id             String        @id @default(uuid())
+    email          String        @unique
+    name           String?
+    hashedPassword String
+    wallets        Wallet[]
+    transactions   Transaction[]
+    sharedWallets  WalletShare[]
+    createdAt      DateTime      @default(now())
+    updatedAt      DateTime      @updatedAt
+}
+
+model Wallet {
+    id           String        @id @default(uuid())
+    name         String
+    balance      Float         @default(0) // Using Float for SQLite
+    currency     String
+    isShared     Boolean       @default(false)
+    userId       String
+    user         User          @relation(fields: [userId], references: [id])
+    transactions Transaction[]
+    sharedWith   WalletShare[]
+    budgets      Budget[]
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+
+    @@index([userId])
+}
+
+model Transaction {
+    id          String    @id @default(uuid())
+    amount      Float // Using Float for SQLite
+    description String?
+    walletId    String
+    wallet      Wallet    @relation(fields: [walletId], references: [id])
+    categoryId  String?
+    category    Category? @relation(fields: [categoryId], references: [id])
+    userId      String
+    user        User      @relation(fields: [userId], references: [id])
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    @@index([walletId])
+    @@index([userId])
+}
+
+model Category {
+    id           String        @id @default(uuid())
+    name         String
+    description  String?
+    transactions Transaction[]
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    Budget       Budget[]
+}
+
+model WalletShare {
+    id           String   @id @default(uuid())
+    walletId     String
+    wallet       Wallet   @relation(fields: [walletId], references: [id])
+    sharedWithId String
+    sharedWith   User     @relation(fields: [sharedWithId], references: [id])
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    @@index([walletId])
+    @@index([sharedWithId])
+}
+
+model Budget {
+    id         String    @id @default(uuid())
+    name       String
+    amount     Float // Using Float for SQLite
+    walletId   String
+    wallet     Wallet    @relation(fields: [walletId], references: [id])
+    categoryId String?
+    category   Category? @relation(fields: [categoryId], references: [id])
+    startDate  DateTime
+    endDate    DateTime
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+
+    @@index([walletId])
+    @@index([categoryId])
+}
